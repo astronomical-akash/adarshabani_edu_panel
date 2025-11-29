@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { QuizBuilder, QuizData } from "./QuizBuilder"
 import { FileUp } from "lucide-react"
+import { upload } from "@vercel/blob/client"
 
 const FormSchema = z.object({
     title: z.string().min(1, "Title is required"),
@@ -83,9 +84,26 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
                 formData.set('content', data.content || '')
             }
 
-            // Add file if present
+            // Handle File Upload via Vercel Blob
             if (file) {
-                formData.append('file', file)
+                try {
+                    console.log("Uploading file to Vercel Blob...")
+                    const blob = await upload(file.name, file, {
+                        access: 'public',
+                        handleUploadUrl: '/api/upload',
+                    })
+
+                    console.log("File uploaded:", blob.url)
+                    formData.set('fileUrl', blob.url)
+                    formData.set('fileName', file.name)
+                    formData.set('fileSize', file.size.toString())
+                    formData.set('mimeType', file.type)
+                } catch (uploadError) {
+                    console.error("Upload failed:", uploadError)
+                    setError("Failed to upload file. Please try again.")
+                    setLoading(false)
+                    return
+                }
             } else if (!initialData && ['VIDEO', 'PRINTABLE', 'INFOGRAPHICS', 'SLIDES'].includes(data.type)) {
                 // Only require file if creating new resource
                 setError(`Please upload a file for ${data.type} type`)

@@ -3,8 +3,6 @@
 import prisma from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { writeFile } from "fs/promises"
-import path from "path"
 
 const ResourceSchema = z.object({
     title: z.string().min(1, "Title is required"),
@@ -24,38 +22,18 @@ const ResourceSchema = z.object({
 })
 
 export async function createResource(formData: FormData) {
-    const file = formData.get('file') as File | null
+    // File upload is now handled client-side via Vercel Blob
+    // We expect fileUrl, fileName, fileSize, mimeType to be passed in formData if a file was uploaded
 
     const rawData: any = {}
     formData.forEach((value, key) => {
         if (key !== 'file') rawData[key] = value
     })
 
-    let fileData: any = {}
-    if (file && file.size > 0) {
-        try {
-            const bytes = await file.arrayBuffer()
-            const buffer = Buffer.from(bytes)
-            const timestamp = Date.now()
-            const originalName = file.name.replace(/\s+/g, '_')
-            const fileName = `${timestamp}-${originalName}`
-            const filePath = path.join(process.cwd(), 'public', 'uploads', fileName)
-            await writeFile(filePath, buffer)
+    // Convert numeric strings to numbers
+    if (rawData.fileSize) rawData.fileSize = Number(rawData.fileSize)
 
-            fileData = {
-                fileUrl: `/uploads/${fileName}`,
-                fileName: file.name,
-                fileSize: file.size,
-                mimeType: file.type
-            }
-        } catch (error) {
-            console.error("File upload error:", error)
-            return { error: "Failed to upload file" }
-        }
-    }
-
-    const finalData = { ...rawData, ...fileData }
-    const result = ResourceSchema.safeParse(finalData)
+    const result = ResourceSchema.safeParse(rawData)
 
     if (!result.success) {
         console.error("Validation failed:", result.error.flatten())
@@ -108,37 +86,16 @@ export async function getResourcesByTopicAndLayer(
 }
 
 export async function updateResource(id: string, formData: FormData) {
-    const file = formData.get('file') as File | null
+    // File upload is now handled client-side via Vercel Blob
     const rawData: any = {}
     formData.forEach((value, key) => {
         if (key !== 'file') rawData[key] = value
     })
 
-    let fileData: any = {}
-    if (file && file.size > 0) {
-        try {
-            const bytes = await file.arrayBuffer()
-            const buffer = Buffer.from(bytes)
-            const timestamp = Date.now()
-            const originalName = file.name.replace(/\s+/g, '_')
-            const fileName = `${timestamp}-${originalName}`
-            const filePath = path.join(process.cwd(), 'public', 'uploads', fileName)
-            await writeFile(filePath, buffer)
+    // Convert numeric strings to numbers
+    if (rawData.fileSize) rawData.fileSize = Number(rawData.fileSize)
 
-            fileData = {
-                fileUrl: `/uploads/${fileName}`,
-                fileName: file.name,
-                fileSize: file.size,
-                mimeType: file.type
-            }
-        } catch (error) {
-            console.error("File upload error:", error)
-            return { error: "Failed to upload file" }
-        }
-    }
-
-    const finalData = { ...rawData, ...fileData }
-    const result = ResourceSchema.safeParse(finalData)
+    const result = ResourceSchema.safeParse(rawData)
     if (!result.success) return { error: result.error.flatten() }
 
     try {

@@ -21,19 +21,19 @@ If you want to run the app locally with the Vercel database:
 
 ---
 
-## 2. Supabase Variables (Auth Only)
-**Go to:** [Supabase Dashboard](https://supabase.com/dashboard) -> Select your project.
 
-### API Keys (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
-1.  Click on **Project Settings** (gear icon).
-2.  Click on **API** in the sidebar.
-3.  **For `NEXT_PUBLIC_SUPABASE_URL`**: Copy the **Project URL**.
-4.  **For `NEXT_PUBLIC_SUPABASE_ANON_KEY`**: Copy the **anon** / **public** key.
-
----
 
 ## 3. Vercel Variable
 ### `NEXT_PUBLIC_BASE_URL`
 *   This is simply the URL where your app will live.
 *   If you haven't deployed yet, you can use `http://localhost:3000` for now, or guess your Vercel URL (usually `https://[project-name].vercel.app`).
 *   Once you deploy, Vercel will give you a domain. You can come back and update this variable later.
+
+## 4. Vercel Blob (File Storage)
+**Required for:** Storing uploaded files (videos, PDFs, images).
+
+*   **BLOB_READ_WRITE_TOKEN**:
+    *   Go to Vercel Dashboard -> Storage -> Create Database -> **Blob**.
+    *   Once created, go to **Settings** -> **Environment Variables**.
+    *   You will see `BLOB_READ_WRITE_TOKEN` automatically added.
+
