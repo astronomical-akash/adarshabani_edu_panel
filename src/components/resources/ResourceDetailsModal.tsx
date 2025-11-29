@@ -300,27 +300,7 @@ export function ResourceDetailsModal({
                                 </p>
                             </div>
 
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                    <User className="h-4 w-4" />
-                                    Created By
-                                </p>
-                                <p className="font-semibold">
-                                    {resource.createdBy.name || resource.createdBy.email}
-                                </p>
-                            </div>
 
-                            {resource.updatedBy && (
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                        <User className="h-4 w-4" />
-                                        Updated By
-                                    </p>
-                                    <p className="font-semibold">
-                                        {resource.updatedBy.name || resource.updatedBy.email}
-                                    </p>
-                                </div>
-                            )}
                         </div>
 
                         {/* Tags */}

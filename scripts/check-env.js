@@ -4,11 +4,7 @@ const path = require('path');
 const requiredEnvVars = [
   'POSTGRES_PRISMA_URL',
   'POSTGRES_URL_NON_POOLING',
-  'GOOGLE_CLIENT_EMAIL',
-  'GOOGLE_PRIVATE_KEY',
-  'NEXT_PUBLIC_BASE_URL',
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  'NEXT_PUBLIC_BASE_URL'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);

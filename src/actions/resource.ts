@@ -63,17 +63,12 @@ export async function createResource(formData: FormData) {
     }
 
     try {
-        const user = await prisma.user.findFirst()
-        if (!user) {
-            return { error: "No user found. Please create a user first." }
-        }
-
         console.log("Creating resource:", result.data.title)
 
         const resource = await prisma.resource.create({
             data: {
                 ...result.data,
-                createdById: user.id,
+                // createdById removed
             }
         })
 
@@ -147,14 +142,11 @@ export async function updateResource(id: string, formData: FormData) {
     if (!result.success) return { error: result.error.flatten() }
 
     try {
-        const user = await prisma.user.findFirst()
-        if (!user) return { error: "Please login first" }
-
         const resource = await prisma.resource.update({
             where: { id },
             data: {
                 ...result.data,
-                updatedById: user.id,
+                // updatedById removed
             }
         })
 
@@ -197,20 +189,6 @@ export async function getResourceById(id: string) {
                 },
                 subtopic: true,
                 layer: true,
-                createdBy: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
-                    }
-                },
-                updatedBy: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
-                    }
-                }
             }
         })
         return resource
@@ -297,13 +275,6 @@ export async function getAllResourcesWithFilters(filters?: {
                 },
                 subtopic: true,
                 layer: true,
-                createdBy: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
-                    }
-                }
             },
             orderBy: { createdAt: 'desc' }
         })
