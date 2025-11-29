@@ -46,6 +46,7 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
     )
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [uploadProgress, setUploadProgress] = useState(0)
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
