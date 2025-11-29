@@ -14,6 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { QuizBuilder, QuizData } from "./QuizBuilder"
 import { FileUp } from "lucide-react"
 import { upload } from "@vercel/blob/client"
+import { Progress } from "@/components/ui/progress"
+import { toast } from "sonner"
 
 const FormSchema = z.object({
     title: z.string().min(1, "Title is required"),
@@ -63,6 +65,7 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
     async function onSubmit(data: z.infer<typeof FormSchema>) {
         setLoading(true)
         setError(null)
+        setUploadProgress(0)
 
         try {
             const formData = new FormData()
@@ -91,6 +94,9 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
                     const blob = await upload(file.name, file, {
                         access: 'public',
                         handleUploadUrl: '/api/upload',
+                        onUploadProgress: (progressEvent) => {
+                            setUploadProgress(progressEvent.percentage)
+                        }
                     })
 
                     console.log("File uploaded:", blob.url)
@@ -122,16 +128,22 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
 
             if (res && res.success) {
                 console.log("Success! Calling onSuccess callback")
+                toast.success("Resource created successfully!", {
+                    description: file ? "File uploaded and resource saved." : "Resource saved."
+                })
                 onSuccess?.()
             } else {
                 console.log("Failed with error:", res?.error)
                 setError(typeof res?.error === 'string' ? res.error : JSON.stringify(res?.error || "Unknown error"))
+                toast.error("Failed to save resource")
             }
         } catch (err) {
             console.error("Error saving resource:", err)
             setError(err instanceof Error ? err.message : "Unknown error occurred")
+            toast.error("An unexpected error occurred")
         } finally {
             setLoading(false)
+            setUploadProgress(0)
         }
     }
 
@@ -157,9 +169,17 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
                                     className="max-w-sm mx-auto"
                                 />
                                 {file && (
-                                    <p className="text-sm text-muted-foreground mt-2">
-                                        Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                                    </p>
+                                    <div className="mt-4 space-y-2">
+                                        <p className="text-sm text-muted-foreground">
+                                            Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                                        </p>
+                                        {uploadProgress > 0 && (
+                                            <div className="w-full max-w-sm mx-auto space-y-1">
+                                                <Progress value={uploadProgress} className="h-2" />
+                                                <p className="text-xs text-muted-foreground text-right">{uploadProgress}%</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -196,9 +216,17 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
                                     className="max-w-sm mx-auto"
                                 />
                                 {file && (
-                                    <p className="text-sm text-muted-foreground mt-2">
-                                        Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
-                                    </p>
+                                    <div className="mt-4 space-y-2">
+                                        <p className="text-sm text-muted-foreground">
+                                            Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                                        </p>
+                                        {uploadProgress > 0 && (
+                                            <div className="w-full max-w-sm mx-auto space-y-1">
+                                                <Progress value={uploadProgress} className="h-2" />
+                                                <p className="text-xs text-muted-foreground text-right">{uploadProgress}%</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             <FormDescription>
@@ -238,9 +266,17 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
                                     className="max-w-sm mx-auto"
                                 />
                                 {file && (
-                                    <p className="text-sm text-muted-foreground mt-2">
-                                        Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
-                                    </p>
+                                    <div className="mt-4 space-y-2">
+                                        <p className="text-sm text-muted-foreground">
+                                            Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                                        </p>
+                                        {uploadProgress > 0 && (
+                                            <div className="w-full max-w-sm mx-auto space-y-1">
+                                                <Progress value={uploadProgress} className="h-2" />
+                                                <p className="text-xs text-muted-foreground text-right">{uploadProgress}%</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             <FormDescription>
@@ -280,9 +316,17 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
                                     className="max-w-sm mx-auto"
                                 />
                                 {file && (
-                                    <p className="text-sm text-muted-foreground mt-2">
-                                        Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
-                                    </p>
+                                    <div className="mt-4 space-y-2">
+                                        <p className="text-sm text-muted-foreground">
+                                            Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                                        </p>
+                                        {uploadProgress > 0 && (
+                                            <div className="w-full max-w-sm mx-auto space-y-1">
+                                                <Progress value={uploadProgress} className="h-2" />
+                                                <p className="text-xs text-muted-foreground text-right">{uploadProgress}%</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             <FormDescription>
@@ -418,7 +462,7 @@ export function ResourceForm({ prefilledData, initialData, onSuccess }: Resource
 
                 <div className="flex gap-2">
                     <Button type="submit" disabled={loading}>
-                        {loading ? "Saving..." : (initialData ? "Save Changes" : "Create Resource")}
+                        {loading ? (uploadProgress > 0 && uploadProgress < 100 ? `Uploading ${uploadProgress}%` : "Saving...") : (initialData ? "Save Changes" : "Create Resource")}
                     </Button>
                     {onSuccess && (
                         <Button type="button" variant="outline" onClick={onSuccess}>
