@@ -4,8 +4,7 @@ const path = require('path');
 const requiredEnvVars = [
   'POSTGRES_PRISMA_URL',
   'POSTGRES_URL_NON_POOLING',
-
-
+];
 const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
 if (missingEnvVars.length > 0) {
