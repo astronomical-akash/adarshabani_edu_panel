@@ -15,6 +15,9 @@ import {
     Redo,
     Minus,
     Image as ImageIcon,
+    Eye,
+    Sparkles,
+    Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AIMenu } from './AIMenu'
@@ -29,14 +32,21 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 interface EditorToolbarProps {
     editor: Editor | null
+    previewMode: boolean
+    setPreviewMode: (mode: boolean) => void
 }
 
-export function EditorToolbar({ editor }: EditorToolbarProps) {
+export function EditorToolbar({ editor, previewMode, setPreviewMode }: EditorToolbarProps) {
     const [latexDialogOpen, setLatexDialogOpen] = useState(false)
     const [latexInput, setLatexInput] = useState('')
+    const [generatingLatex, setGeneratingLatex] = useState(false)
+    const [formattingDoc, setFormattingDoc] = useState(false)
+    const [aiPrompt, setAiPrompt] = useState('')
+    const [aiDialogOpen, setAiDialogOpen] = useState(false)
 
     if (!editor) {
         return null
@@ -44,9 +54,63 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
     const insertLatex = () => {
         if (latexInput) {
-            editor.chain().focus().insertContent(`<div data-type="math" data-latex="${latexInput}"></div>`).run()
+            // Check if it's inline or block
+            // For now, we insert as inline math node
+            // The user can wrap in $$ for block if they want, or we can detect
+            editor.chain().focus().insertContent(`<span data-type="math" data-latex="${latexInput}"></span>`).run()
             setLatexInput('')
             setLatexDialogOpen(false)
+        }
+    }
+
+    const generateLatexFromAI = async () => {
+        if (!aiPrompt) return
+
+        setGeneratingLatex(true)
+        try {
+            const response = await fetch('/api/ai/generate-latex', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: aiPrompt }),
+            })
+
+            if (!response.ok) throw new Error('Failed to generate LaTeX')
+
+            const { latex } = await response.json()
+            setLatexInput(latex)
+            setAiDialogOpen(false)
+            setAiPrompt('')
+            toast.success('LaTeX generated successfully')
+        } catch (error) {
+            console.error('AI Error:', error)
+            toast.error('Failed to generate LaTeX')
+        } finally {
+            setGeneratingLatex(false)
+        }
+    }
+
+    const autoFormatDocument = async () => {
+        setFormattingDoc(true)
+        try {
+            const html = editor.getHTML()
+            const response = await fetch('/api/ai/auto-format', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: html }),
+            })
+
+            if (!response.ok) throw new Error('Failed to format document')
+
+            const { formattedText } = await response.json()
+
+            // We need to be careful replacing content
+            editor.commands.setContent(formattedText)
+            toast.success('Document formatted successfully')
+        } catch (error) {
+            console.error('AI Error:', error)
+            toast.error('Failed to format document')
+        } finally {
+            setFormattingDoc(false)
         }
     }
 
@@ -175,6 +239,34 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
                 <div className="toolbar-divider bg-neutral-200" />
 
+                <div className="toolbar-group">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPreviewMode(!previewMode)}
+                        className={previewMode ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
+                        title={previewMode ? "Edit Mode" : "Preview Mode"}
+                    >
+                        <Eye className="h-4 w-4 text-black" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={autoFormatDocument}
+                        disabled={formattingDoc}
+                        className="hover:bg-neutral-50"
+                        title="AI Auto-Format (Auto-LaTeX)"
+                    >
+                        {formattingDoc ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-black" />
+                        ) : (
+                            <Sparkles className="h-4 w-4 text-black" />
+                        )}
+                    </Button>
+                </div>
+
+                <div className="toolbar-divider bg-neutral-200" />
+
                 <div className="toolbar-group ml-auto">
                     <Button
                         variant="ghost"
@@ -201,17 +293,17 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 <AIMenu editor={editor} />
             </div>
 
+            {/* LaTeX Dialog */}
             <Dialog open={latexDialogOpen} onOpenChange={setLatexDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Insert LaTeX Equation</DialogTitle>
                         <DialogDescription>
-                            Enter your LaTeX equation below. Example: E = mc^2
+                            Enter your LaTeX equation below or generate it with AI.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="latex">Equation</Label>
+                        <div className="flex gap-2">
                             <Input
                                 id="latex"
                                 placeholder="e.g. E = mc^2"
@@ -223,10 +315,54 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                                     }
                                 }}
                             />
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setAiDialogOpen(true)}
+                                title="Generate with AI"
+                            >
+                                <Sparkles className="h-4 w-4" />
+                            </Button>
                         </div>
                     </div>
                     <DialogFooter>
                         <Button onClick={insertLatex}>Insert</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* AI Generation Dialog */}
+            <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Generate Equation with AI</DialogTitle>
+                        <DialogDescription>
+                            Describe the equation you want to generate.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Input
+                            placeholder="e.g. quadratic formula"
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    generateLatexFromAI()
+                                }
+                            }}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={generateLatexFromAI} disabled={generatingLatex}>
+                            {generatingLatex ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                'Generate'
+                            )}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

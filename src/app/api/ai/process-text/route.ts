@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
             messages: [
                 {
                     role: 'system',
-                    content: 'Behave like a intelligent editor of academic expert.',
+                    content: 'Behave like a intelligent editor of academic expert. Use LaTeX formatting for all mathematical and physical formulas (wrapped in $...$).',
                 },
                 {
                     role: 'user',

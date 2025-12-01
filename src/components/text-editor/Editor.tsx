@@ -5,7 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { Color } from '@tiptap/extension-color'
 import TextStyle from '@tiptap/extension-text-style'
 import FontFamily from '@tiptap/extension-font-family'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Box, Math } from '@/lib/tiptap-extensions'
 import { EditorToolbar } from './EditorToolbar'
 import './editor.css'
@@ -49,7 +49,7 @@ export function Editor({ content, onChange, onSave, settings }: EditorProps) {
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none max-w-none',
+                class: 'tiptap prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none max-w-none',
                 style: 'font-family: "Tiro Bangla", serif;',
             },
         },
@@ -79,14 +79,20 @@ export function Editor({ content, onChange, onSave, settings }: EditorProps) {
         }
     }, [settings, editor])
 
+    const [previewMode, setPreviewMode] = useState(false)
+
     if (!editor) {
         return null
     }
 
     return (
         <div className="editor-container">
-            <EditorToolbar editor={editor} />
-            <div className="editor-content">
+            <EditorToolbar
+                editor={editor}
+                previewMode={previewMode}
+                setPreviewMode={setPreviewMode}
+            />
+            <div className={`editor-content ${previewMode ? 'preview-mode' : ''}`}>
                 <EditorContent editor={editor} />
             </div>
         </div>

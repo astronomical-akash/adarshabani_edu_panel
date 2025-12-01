@@ -230,3 +230,28 @@
 .katex-display {
   margin: 1rem 0;
 }
+
+/* Math Preview Mode */
+.editor-content.preview-mode .math-source {
+  display: none;
+}
+
+.editor-content.preview-mode .math-rendered {
+  display: inline-block;
+}
+
+/* Edit Mode (Default) */
+.editor-content:not(.preview-mode) .math-source {
+  display: inline-block;
+  cursor: pointer;
+}
+
+.editor-content:not(.preview-mode) .math-rendered {
+  display: none;
+}
+
+/* Ensure math node is inline */
+.math-node {
+  display: inline-block;
+  vertical-align: middle;
+}
