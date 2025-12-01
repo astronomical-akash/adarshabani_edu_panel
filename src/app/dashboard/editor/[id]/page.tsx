@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Editor } from '@/components/text-editor/Editor'
-import { SettingsPanel, FormattingSettings, defaultSettings } from '@/components/text-editor/SettingsPanel'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, Download, Save, Loader2 } from 'lucide-react'
@@ -19,15 +18,19 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 
+const MDXEditor = dynamic(() => import('@/components/text-editor/MDXEditorWrapper').then(mod => mod.MDXEditorWrapper), {
+    ssr: false,
+    loading: () => <div className="h-[500px] w-full bg-gray-50 animate-pulse" />
+})
+
 export default function EditorPage() {
     const params = useParams()
     const router = useRouter()
     const documentId = params?.id as string
-    const editorRef = useRef<HTMLDivElement>(null)
+    const editorWrapperRef = useRef<HTMLDivElement>(null)
 
     const [title, setTitle] = useState('')
-    const [content, setContent] = useState<any>(null)
-    const [settings, setSettings] = useState<FormattingSettings>(defaultSettings)
+    const [content, setContent] = useState<string>('')
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [exporting, setExporting] = useState(false)
@@ -57,8 +60,16 @@ export default function EditorPage() {
             if (response.ok) {
                 const { document } = await response.json()
                 setTitle(document.title)
-                setContent(document.content)
-                setSettings(document.settings || defaultSettings)
+
+                // Handle content format
+                let markdown = ''
+                if (document.content && typeof document.content === 'object' && document.content.markdown) {
+                    markdown = document.content.markdown
+                } else if (typeof document.content === 'string') {
+                    markdown = document.content
+                }
+                setContent(markdown)
+
                 if (document.metadata) {
                     setMetadata(document.metadata)
                 }
@@ -91,9 +102,8 @@ export default function EditorPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title,
-                    content,
-                    settings,
-                    metadata // Save metadata
+                    content: { markdown: content }, // Store as object with markdown property
+                    metadata
                 }),
             })
 
@@ -115,7 +125,7 @@ export default function EditorPage() {
         }
     }
 
-    const handleAutoSave = async (newContent: any) => {
+    const handleAutoSave = async (newContent: string) => {
         setContent(newContent)
 
         // Auto-save only if document exists
@@ -124,7 +134,7 @@ export default function EditorPage() {
                 await fetch(`/api/documents/${documentId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: newContent }),
+                    body: JSON.stringify({ content: { markdown: newContent } }),
                 })
             } catch (error) {
                 console.error('Auto-save error:', error)
@@ -135,9 +145,8 @@ export default function EditorPage() {
     const exportPDF = async () => {
         setExporting(true)
         try {
-            // Get the editor content element
-            // We need to find the .tiptap element inside the wrapper
-            const editorElement = editorRef.current?.querySelector('.tiptap') as HTMLElement
+            // Target the prose content inside MDXEditor
+            const editorElement = editorWrapperRef.current?.querySelector('.prose') as HTMLElement
 
             if (!editorElement) {
                 throw new Error('Editor element not found')
@@ -228,22 +237,15 @@ export default function EditorPage() {
             </div>
 
             {/* Editor */}
-            <div className="flex-1 overflow-hidden bg-gray-50">
-                <div className="max-w-5xl mx-auto h-full py-8" ref={editorRef}>
-                    <Editor
-                        content={content}
-                        onChange={setContent}
-                        onSave={handleAutoSave}
-                        settings={settings}
+            <div className="flex-1 overflow-hidden bg-white">
+                <div className="max-w-5xl mx-auto h-full py-8 px-8 overflow-y-auto" ref={editorWrapperRef}>
+                    <MDXEditor
+                        markdown={content}
+                        onChange={handleAutoSave}
+                        className="min-h-[500px]"
                     />
                 </div>
             </div>
-
-            {/* Settings Panel */}
-            <SettingsPanel
-                settings={settings}
-                onSettingsChange={setSettings}
-            />
 
             {/* Save Dialog */}
             <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
