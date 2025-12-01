@@ -25,6 +25,7 @@ const TopicSchema = z.object({
     title: z.string().min(1, "Title is required"),
     orderIndex: z.number().default(0),
     chapterId: z.string().min(1, "Chapter ID is required"),
+    layerIds: z.array(z.string()).optional(),
 })
 
 // Update Schemas (Partial)
@@ -171,8 +172,17 @@ export async function createTopic(data: z.infer<typeof TopicSchema>) {
     const result = TopicSchema.safeParse(data)
     if (!result.success) return { error: result.error.flatten() }
 
+    const { layerIds, ...topicData } = result.data
+
     try {
-        const newTopic = await prisma.topic.create({ data: result.data })
+        const newTopic = await prisma.topic.create({
+            data: {
+                ...topicData,
+                requiredLayers: layerIds ? {
+                    connect: layerIds.map(id => ({ id }))
+                } : undefined
+            }
+        })
         revalidatePath('/dashboard/subject/[id]')
         return { success: true, data: newTopic }
     } catch (error) {
@@ -184,10 +194,20 @@ export async function updateTopic(id: string, data: z.infer<typeof UpdateTopicSc
     const result = UpdateTopicSchema.safeParse(data)
     if (!result.success) return { error: result.error.flatten() }
 
+    const { layerIds, ...topicData } = result.data
+
     try {
+        const updateData: any = { ...topicData }
+
+        if (layerIds) {
+            updateData.requiredLayers = {
+                set: layerIds.map(id => ({ id }))
+            }
+        }
+
         const updatedTopic = await prisma.topic.update({
             where: { id },
-            data: result.data
+            data: updateData
         })
         revalidatePath('/dashboard/subject/[id]')
         return { success: true, data: updatedTopic }
@@ -385,6 +405,7 @@ export async function getSubjectDetails(subjectId: string) {
                     topics: {
                         orderBy: { orderIndex: 'asc' },
                         include: {
+                            requiredLayers: true,
                             resources: {
                                 select: { layerId: true }
                             },

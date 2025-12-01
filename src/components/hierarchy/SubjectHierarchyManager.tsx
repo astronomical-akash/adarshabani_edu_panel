@@ -172,12 +172,12 @@ export function SubjectHierarchyManager({ subject }: { subject: SubjectData }) {
                                     editTitle="Edit Chapter"
                                     deleteTitle="Delete Chapter?"
                                 />
-                                <ItemDialog
+                                <TopicDialog
                                     title="Add Topic"
-                                    label="Topic Title"
+                                    layers={layers}
                                     trigger={<Button size="sm" variant="ghost"><Plus className="w-4 h-4 mr-1" /> Topic</Button>}
-                                    onSubmit={async (val) => {
-                                        const res = await createTopic({ title: val, chapterId: chapter.id, orderIndex: 0 })
+                                    onSubmit={async (data) => {
+                                        const res = await createTopic({ ...data, chapterId: chapter.id, orderIndex: 0 })
                                         if (res.success) window.location.reload()
                                     }}
                                 />
@@ -192,9 +192,11 @@ export function SubjectHierarchyManager({ subject }: { subject: SubjectData }) {
                                         <AccordionTrigger className="hover:no-underline py-2 flex-1">
                                             <span className="font-medium">{topic.title}</span>
                                         </AccordionTrigger>
-                                        <ItemActions
-                                            onEdit={async (newTitle) => {
-                                                const res = await updateTopic(topic.id, { title: newTitle })
+                                        <TopicActions
+                                            topic={topic}
+                                            layers={layers}
+                                            onEdit={async (data) => {
+                                                const res = await updateTopic(topic.id, data)
                                                 if (res.success) {
                                                     window.location.reload()
                                                     toast.success("Topic updated")
@@ -211,9 +213,6 @@ export function SubjectHierarchyManager({ subject }: { subject: SubjectData }) {
                                                     toast.error(res.error || "Failed to delete topic")
                                                 }
                                             }}
-                                            initialValue={topic.title}
-                                            editTitle="Edit Topic"
-                                            deleteTitle="Delete Topic?"
                                         />
                                     </div>
                                     <AccordionContent className="pl-4 border-l-2 ml-2">
@@ -739,5 +738,167 @@ function SubtopicForm({ initialData, layers, onSubmit }: {
                 <Button type="submit">Save</Button>
             </form>
         </Form>
+    )
+}
+
+function TopicDialog({ title, layers, trigger, onSubmit, initialData }: {
+    title: string,
+    layers: any[],
+    trigger?: React.ReactNode,
+    onSubmit: (data: any) => Promise<void>,
+    initialData?: { title: string, requiredLayers?: any[] }
+}) {
+    const [open, setOpen] = useState(false)
+
+    const form = useForm({
+        resolver: zodResolver(z.object({
+            title: z.string().min(1, "Title is required"),
+            layerIds: z.array(z.string()).optional()
+        })),
+        defaultValues: {
+            title: initialData?.title || "",
+            layerIds: initialData?.requiredLayers?.map((l: any) => l.id) || []
+        }
+    })
+
+    async function handleSubmit(data: any) {
+        await onSubmit(data)
+        setOpen(false)
+        form.reset()
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                {trigger || <Button>{title}</Button>}
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+                <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Title</FormLabel>
+                                    <FormControl><Input {...field} /></FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="layerIds"
+                            render={() => (
+                                <FormItem>
+                                    <FormLabel>Required Layers</FormLabel>
+                                    <div className="grid grid-cols-2 gap-2 border p-4 rounded-md">
+                                        {layers.map((layer) => (
+                                            <FormField
+                                                key={layer.id}
+                                                control={form.control}
+                                                name="layerIds"
+                                                render={({ field }) => {
+                                                    return (
+                                                        <FormItem
+                                                            key={layer.id}
+                                                            className="flex flex-row items-start space-x-3 space-y-0"
+                                                        >
+                                                            <FormControl>
+                                                                <Checkbox
+                                                                    checked={field.value?.includes(layer.id)}
+                                                                    onCheckedChange={(checked) => {
+                                                                        return checked
+                                                                            ? field.onChange([...(field.value || []), layer.id])
+                                                                            : field.onChange(
+                                                                                field.value?.filter(
+                                                                                    (value) => value !== layer.id
+                                                                                )
+                                                                            )
+                                                                    }}
+                                                                />
+                                                            </FormControl>
+                                                            <FormLabel className="font-normal">
+                                                                {layer.name}
+                                                            </FormLabel>
+                                                        </FormItem>
+                                                    )
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <FormDescription>
+                                        Select the layers applicable to this topic.
+                                    </FormDescription>
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit">Save</Button>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function TopicActions({ topic, layers, onEdit, onDelete }: {
+    topic: any,
+    layers: any[],
+    onEdit: (data: any) => Promise<void>,
+    onDelete: () => Promise<void>
+}) {
+    const [isEditing, setIsEditing] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreVertical className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsEditing(true) }}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsDeleting(true) }} className="text-red-600">
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            {isEditing && (
+                <TopicDialog
+                    title="Edit Topic"
+                    layers={layers}
+                    initialData={topic}
+                    trigger={<span className="hidden"></span>}
+                    onSubmit={async (data) => {
+                        await onEdit(data)
+                        setIsEditing(false)
+                    }}
+                />
+            )}
+
+            <AlertDialog open={isDeleting} onOpenChange={setIsDeleting}>
+                <AlertDialogContent onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Topic?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this topic and its contents.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={(e: React.MouseEvent) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={async (e: React.MouseEvent) => {
+                            e.stopPropagation()
+                            await onDelete()
+                            setIsDeleting(false)
+                        }} className="bg-red-600">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     )
 }

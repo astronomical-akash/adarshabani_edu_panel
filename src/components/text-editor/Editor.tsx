@@ -1,0 +1,97 @@
+'use client'
+
+import { useEditor, EditorContent, Editor as TipTapEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { Color } from '@tiptap/extension-color'
+import TextStyle from '@tiptap/extension-text-style'
+import FontFamily from '@tiptap/extension-font-family'
+import { useEffect } from 'react'
+import { Box, Math } from '@/lib/tiptap-extensions'
+import { EditorToolbar } from './EditorToolbar'
+import './editor.css'
+import 'katex/dist/katex.min.css'
+
+interface EditorProps {
+    content?: any
+    onChange?: (content: any) => void
+    onSave?: (content: any) => void
+    settings?: any
+}
+
+export function Editor({ content, onChange, onSave, settings }: EditorProps) {
+    const editor = useEditor({
+        extensions: [
+            StarterKit.configure({
+                heading: {
+                    levels: [1, 2, 3],
+                },
+            }),
+            TextStyle,
+            Color,
+            FontFamily.configure({
+                types: ['textStyle'],
+            }),
+            Box,
+            Math,
+        ],
+        content: content || {
+            type: 'doc',
+            content: [
+                {
+                    type: 'paragraph',
+                    content: [
+                        {
+                            type: 'text',
+                            text: 'Start typing...',
+                        },
+                    ],
+                },
+            ],
+        },
+        onUpdate: ({ editor }) => {
+            const json = editor.getJSON()
+            onChange?.(json)
+        },
+        editorProps: {
+            attributes: {
+                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
+                style: 'font-family: "Tiro Bangla", serif;',
+            },
+        },
+    })
+
+    // Auto-save every 30 seconds
+    useEffect(() => {
+        if (!editor || !onSave) return
+
+        const interval = setInterval(() => {
+            const json = editor.getJSON()
+            onSave(json)
+        }, 30000)
+
+        return () => clearInterval(interval)
+    }, [editor, onSave])
+
+    // Apply custom settings when they change
+    useEffect(() => {
+        if (settings && editor) {
+            // Settings will be applied via CSS classes
+            // This is handled in the settings panel
+        }
+    }, [settings, editor])
+
+    if (!editor) {
+        return null
+    }
+
+    return (
+        <div className="editor-container">
+            <EditorToolbar editor={editor} />
+            <div className="editor-content">
+                <EditorContent editor={editor} />
+            </div>
+        </div>
+    )
+}
+
+export type { TipTapEditor as EditorInstance }

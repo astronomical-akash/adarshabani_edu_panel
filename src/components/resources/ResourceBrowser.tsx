@@ -375,45 +375,44 @@ export function ResourceBrowser() {
                             <Card key={resource.id} className="hover:shadow-lg transition-shadow">
                                 <CardContent className="pt-6">
                                     <div className="space-y-4">
-                                        {/* Header */}
-                                        <div className="flex items-start justify-between">
-                                            <div className={`p-2 rounded-lg ${RESOURCE_TYPE_COLORS[resource.type as keyof typeof RESOURCE_TYPE_COLORS]}`}>
-                                                {getResourceIcon(resource.type)}
+                                        {/* Row 1: Subtopic - Layer - Type */}
+                                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                            {resource.subtopic && (
+                                                <>
+                                                    <span className="font-medium text-primary">{resource.subtopic.title}</span>
+                                                    <span>•</span>
+                                                </>
+                                            )}
+                                            <div className="flex items-center gap-1">
+                                                <LayersIcon className="h-3 w-3" />
+                                                <span>{resource.layer.name}</span>
                                             </div>
-                                            <Badge className={STATUS_COLORS[resource.status as keyof typeof STATUS_COLORS]}>
-                                                {resource.status}
+                                            <span>•</span>
+                                            <Badge variant="outline" className={`${RESOURCE_TYPE_COLORS[resource.type as keyof typeof RESOURCE_TYPE_COLORS]} border-0`}>
+                                                {resource.type}
                                             </Badge>
                                         </div>
 
-                                        {/* Title */}
+                                        {/* Row 2: Title */}
                                         <div>
                                             <h3 className="font-semibold text-lg line-clamp-2 mb-1">
                                                 {resource.title}
                                             </h3>
-                                            {resource.description && (
-                                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                                    {resource.description}
-                                                </p>
-                                            )}
                                         </div>
 
-                                        {/* Metadata */}
-                                        <div className="space-y-2 text-xs text-muted-foreground">
-                                            <div className="flex items-center gap-2">
-                                                <LayersIcon className="h-3 w-3" />
-                                                <span>{resource.layer.name}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="h-3 w-3" />
-                                                <span>{new Date(resource.createdAt).toLocaleDateString()}</span>
-                                            </div>
-                                            <div className="text-xs">
-                                                <span className="font-medium">
-                                                    {resource.topic.chapter.subject.class.name}
-                                                </span>
-                                                {" • "}
-                                                <span>{resource.topic.chapter.subject.name}</span>
-                                            </div>
+                                        {/* Row 3: Class - Subject */}
+                                        <div className="text-sm text-muted-foreground">
+                                            <span className="font-medium text-foreground">
+                                                {resource.topic.chapter.subject.class.name}
+                                            </span>
+                                            {" • "}
+                                            <span>{resource.topic.chapter.subject.name}</span>
+                                        </div>
+
+                                        {/* Row 4: Uploaded By */}
+                                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                            <span>Uploaded by:</span>
+                                            <span className="font-medium">Admin</span>
                                         </div>
 
                                         {/* Actions */}

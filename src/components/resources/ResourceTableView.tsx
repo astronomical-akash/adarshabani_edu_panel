@@ -87,6 +87,7 @@ export function ResourceTableView() {
                 for (const topic of chapter.topics) {
                     // Add row for topic itself
                     const layerStatuses: Record<string, 'empty' | 'partial' | 'complete'> = {}
+                    const topicRequiredLayerIds = topic.requiredLayers?.map((l: any) => l.id) || []
 
                     for (const layer of layers) {
                         // Check if topic has resources for this layer
@@ -100,7 +101,8 @@ export function ResourceTableView() {
                         subtopicId: null,
                         subtopicTitle: null,
                         chapterTitle: chapter.title,
-                        layerStatuses
+                        layerStatuses,
+                        requiredLayerIds: topicRequiredLayerIds
                     })
 
                     // Add rows for each subtopic
@@ -212,27 +214,27 @@ export function ResourceTableView() {
             </Card>
 
             {selectedSubject && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Resource Management Table</CardTitle>
+                <Card className="overflow-hidden border-2">
+                    <CardHeader className="bg-muted/30 pb-4">
+                        <CardTitle>Resource Management Matrix</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         {loading ? (
-                            <div className="text-center py-8">Loading...</div>
+                            <div className="text-center py-12">Loading...</div>
                         ) : topicRows.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
+                            <div className="text-center py-12 text-muted-foreground">
                                 No topics found for this subject
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Chapter</TableHead>
-                                            <TableHead>Topic</TableHead>
-                                            <TableHead>Subtopic</TableHead>
+                                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                            <TableHead className="w-[150px] font-bold">Chapter</TableHead>
+                                            <TableHead className="w-[200px] font-bold">Topic</TableHead>
+                                            <TableHead className="w-[200px] font-bold">Subtopic</TableHead>
                                             {layers.map(layer => (
-                                                <TableHead key={layer.id} className="text-center">
+                                                <TableHead key={layer.id} className="text-center min-w-[120px] font-bold">
                                                     {layer.name}
                                                 </TableHead>
                                             ))}
@@ -240,43 +242,59 @@ export function ResourceTableView() {
                                     </TableHeader>
                                     <TableBody>
                                         {topicRows.map((row, idx) => (
-                                            <TableRow key={idx}>
-                                                <TableCell className="font-medium">{row.chapterTitle}</TableCell>
-                                                <TableCell>{row.topicTitle}</TableCell>
+                                            <TableRow key={idx} className="hover:bg-muted/30 transition-colors">
+                                                <TableCell className="font-medium text-muted-foreground">{row.chapterTitle}</TableCell>
+                                                <TableCell className="font-medium">{row.topicTitle}</TableCell>
                                                 <TableCell className="text-muted-foreground">
-                                                    {row.subtopicTitle || '—'}
+                                                    {row.subtopicTitle ? (
+                                                        <span className="flex items-center gap-2">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                                            {row.subtopicTitle}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-300 italic">Main Topic</span>
+                                                    )}
                                                 </TableCell>
                                                 {layers.map(layer => {
-                                                    const isDiagnostic = layer.name.toLowerCase().includes('diagnostic')
-                                                    const isLayer1 = layer.name.toLowerCase().includes('layer 1')
-                                                    const isLayer2 = layer.name.toLowerCase().includes('layer 2')
                                                     const hasSubtopic = !!row.subtopicId
 
-                                                    // Logic for Subtopics:
-                                                    // If requiredLayerIds is present (length > 0), check if this layer is in it.
-                                                    // If not in it, render blank.
-                                                    if (hasSubtopic && row.requiredLayerIds && row.requiredLayerIds.length > 0) {
-                                                        if (!row.requiredLayerIds.includes(layer.id)) {
-                                                            return <TableCell key={layer.id} className="bg-gray-50/50"></TableCell>
-                                                        }
+                                                    // Check if layer is required
+                                                    let isRequired = true
+                                                    if (row.requiredLayerIds && row.requiredLayerIds.length > 0) {
+                                                        isRequired = row.requiredLayerIds.includes(layer.id)
+                                                    } else {
+                                                        // Fallback legacy logic if no specific requirements set
+                                                        const isDiagnostic = layer.name.toLowerCase().includes('diagnostic')
+                                                        const isLayer1 = layer.name.toLowerCase().includes('layer 1')
+                                                        const isLayer2 = layer.name.toLowerCase().includes('layer 2')
+
+                                                        if (isDiagnostic && hasSubtopic) isRequired = false
+                                                        if ((isLayer1 || isLayer2) && !hasSubtopic) isRequired = false
                                                     }
 
-                                                    // Fallback/Legacy Logic for Topics or Subtopics without specific requirements:
-                                                    let isDisabled = false
-                                                    if (isDiagnostic && hasSubtopic) isDisabled = true
-                                                    if ((isLayer1 || isLayer2) && !hasSubtopic) isDisabled = true
+                                                    if (!isRequired) {
+                                                        return (
+                                                            <TableCell key={layer.id} className="text-center bg-gray-50/50 p-4">
+                                                                <div className="flex justify-center items-center h-full opacity-30" title="Not applicable">
+                                                                    <div className="w-6 h-0.5 bg-gray-400 border-dashed border-t-2 border-gray-400"></div>
+                                                                </div>
+                                                            </TableCell>
+                                                        )
+                                                    }
 
                                                     return (
-                                                        <TableCell key={layer.id} className="text-center">
-                                                            <div className="flex items-center justify-center gap-2">
-                                                                {getStatusIcon(row.layerStatuses[layer.id])}
-                                                                <div className="flex flex-col gap-1">
+                                                        <TableCell key={layer.id} className="text-center p-2">
+                                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    {getStatusIcon(row.layerStatuses[layer.id])}
+                                                                    <span className="text-xs text-muted-foreground capitalize">{row.layerStatuses[layer.id]}</span>
+                                                                </div>
+                                                                <div className="flex gap-1">
                                                                     <Button
                                                                         size="sm"
                                                                         variant="outline"
-                                                                        className="h-6 text-xs"
+                                                                        className="h-7 px-2 text-xs bg-white hover:bg-blue-50 hover:text-blue-600 border-gray-200"
                                                                         onClick={() => openResourceDialog(row, layer.id)}
-                                                                        disabled={isDisabled}
                                                                     >
                                                                         <Plus className="h-3 w-3 mr-1" />
                                                                         Add
@@ -285,7 +303,7 @@ export function ResourceTableView() {
                                                                         <Button
                                                                             size="sm"
                                                                             variant="ghost"
-                                                                            className="h-6 text-xs text-blue-600 hover:text-blue-800"
+                                                                            className="h-7 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                                                                             onClick={() => viewResources(row, layer.id)}
                                                                         >
                                                                             View

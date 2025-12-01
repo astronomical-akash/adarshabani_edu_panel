@@ -50,6 +50,7 @@ model Topic {
   subtopics  Subtopic[]
   resources  Resource[]
   quizzes    Quiz[]
+  requiredLayers Layer[]    @relation("TopicRequiredLayers")
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 }
@@ -75,6 +76,7 @@ model Layer {
   resources   Resource[]
   quizzes     Quiz[]
   subtopics   Subtopic[] @relation("SubtopicRequiredLayers")
+  topics      Topic[]    @relation("TopicRequiredLayers")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
@@ -181,4 +183,15 @@ model QuizOption {
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+// Text Editor Documents
+model Document {
+  id          String   @id @default(cuid())
+  title       String
+  content     Json     // TipTap JSON content
+  settings    Json?    // Formatting settings (H1-H3, paragraph, equation, box, lists)
+  blobUrl     String?  // Optional Vercel Blob URL for backup
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

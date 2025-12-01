@@ -140,7 +140,7 @@ export function QuizPlayer({ content, title }: QuizPlayerProps) {
                     </span>
                 </div>
                 <Progress value={((currentQuestionIndex) / totalQuestions) * 100} className="h-2" />
-                <CardTitle className="text-xl mt-4 leading-relaxed">
+                <CardTitle className="text-xl mt-4 leading-relaxed text-foreground">
                     {currentQuestion.question}
                 </CardTitle>
             </CardHeader>
@@ -172,7 +172,7 @@ export function QuizPlayer({ content, title }: QuizPlayerProps) {
                                     <div className="flex-1">
                                         <Label
                                             htmlFor={`opt-${idx}`}
-                                            className="text-base font-normal cursor-pointer leading-relaxed block"
+                                            className="text-base font-normal cursor-pointer leading-relaxed block text-foreground"
                                         >
                                             {option.text}
                                         </Label>

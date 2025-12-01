@@ -60,7 +60,7 @@ export function LayerAccordion({ layerName, resources, defaultOpen = false, onEd
             <AccordionItem value="item-1" className="border-none">
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-gray-50 rounded-t-lg">
                     <div className="flex items-center gap-3">
-                        <span className="font-semibold text-lg">{layerName}</span>
+                        <span className="font-bold text-xl text-primary">{layerName}</span>
                         <Badge variant="secondary" className="rounded-full px-3">
                             {resources.length} resource{resources.length !== 1 ? 's' : ''}
                         </Badge>
