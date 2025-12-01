@@ -1,43 +1,17 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
-import { NextResponse } from 'next/server';
+import { put } from '@vercel/blob'
+import { NextResponse } from 'next/server'
 
-export async function POST(request: Request): Promise<NextResponse> {
-    const body = (await request.json()) as HandleUploadBody;
+export async function POST(request: Request) {
+    const { searchParams } = new URL(request.url)
+    const filename = searchParams.get('filename')
 
-    try {
-        const jsonResponse = await handleUpload({
-            body,
-            request,
-            onBeforeGenerateToken: async (pathname, clientPayload) => {
-                // Generate a client token for the browser to upload the file
-                // Since auth is removed, we allow public uploads for now
-                return {
-                    allowedContentTypes: [
-                        'image/jpeg',
-                        'image/png',
-                        'image/svg+xml',
-                        'application/pdf',
-                        'video/mp4',
-                        'text/plain',
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                        'application/msword'
-                    ],
-                    tokenPayload: JSON.stringify({
-                        // optional, sent to your server on upload completion
-                    }),
-                };
-            },
-            onUploadCompleted: async ({ blob, tokenPayload }) => {
-                // Get notified of client upload completion
-                console.log('blob uploaded', blob.url);
-            },
-        });
-
-        return NextResponse.json(jsonResponse);
-    } catch (error) {
-        return NextResponse.json(
-            { error: (error as Error).message },
-            { status: 400 },
-        );
+    if (!filename || !request.body) {
+        return NextResponse.json({ error: 'Filename and body required' }, { status: 400 })
     }
+
+    const blob = await put(filename, request.body, {
+        access: 'public',
+    })
+
+    return NextResponse.json(blob)
 }

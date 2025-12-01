@@ -41,7 +41,7 @@ export const MDXEditorWrapper = forwardRef<MDXEditorMethods, MDXEditorWrapperPro
     useImperativeHandle(ref, () => editorRef.current!, [])
 
     return (
-        <div className={cn("mdx-editor-wrapper", className)}>
+        <div className={cn("mdx-editor-wrapper", className)} style={{ fontFamily: 'var(--font-tiro-bangla), serif' }}>
             <MDXEditor
                 ref={editorRef}
                 markdown={markdown}
@@ -53,7 +53,16 @@ export const MDXEditorWrapper = forwardRef<MDXEditorMethods, MDXEditorWrapperPro
                     quotePlugin(),
                     thematicBreakPlugin(),
                     markdownShortcutPlugin(),
-                    imagePlugin(),
+                    imagePlugin({
+                        imageUploadHandler: async (image: File) => {
+                            const response = await fetch(`/api/upload?filename=${image.name}`, {
+                                method: 'POST',
+                                body: image,
+                            })
+                            const newBlob = await response.json()
+                            return newBlob.url
+                        }
+                    }),
                     tablePlugin(),
                     linkPlugin(),
                     linkDialogPlugin(),
@@ -77,7 +86,7 @@ export const MDXEditorWrapper = forwardRef<MDXEditorMethods, MDXEditorWrapperPro
                         )
                     })
                 ]}
-                contentEditableClassName="prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none focus:outline-none"
+                contentEditableClassName="prose prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none focus:outline-none text-gray-900 dark:text-gray-900"
             />
         </div>
     )

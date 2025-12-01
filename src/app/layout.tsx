@@ -13,6 +13,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { Tiro_Bangla } from "next/font/google";
+
+const tiroBangla = Tiro_Bangla({
+  weight: "400",
+  subsets: ["bengali"],
+  variable: "--font-tiro-bangla",
+});
+
 export const metadata: Metadata = {
   title: "AdarshabaniNXT",
   description: "Educational Administration Platform",
@@ -26,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${tiroBangla.variable} antialiased`}
       >
         {children}
         <Toaster />
