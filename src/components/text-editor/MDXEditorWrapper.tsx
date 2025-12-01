@@ -7,7 +7,6 @@ import {
     quotePlugin,
     thematicBreakPlugin,
     markdownShortcutPlugin,
-    mathPlugin,
     imagePlugin,
     tablePlugin,
     linkPlugin,
@@ -23,7 +22,6 @@ import {
     InsertThematicBreak,
     ListsToggle,
     Separator,
-    InsertMath,
     MDXEditorMethods
 } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
@@ -55,7 +53,6 @@ export const MDXEditorWrapper = forwardRef<MDXEditorMethods, MDXEditorWrapperPro
                     quotePlugin(),
                     thematicBreakPlugin(),
                     markdownShortcutPlugin(),
-                    mathPlugin(),
                     imagePlugin(),
                     tablePlugin(),
                     linkPlugin(),
@@ -76,7 +73,6 @@ export const MDXEditorWrapper = forwardRef<MDXEditorMethods, MDXEditorWrapperPro
                                 <InsertImage />
                                 <InsertTable />
                                 <InsertThematicBreak />
-                                <InsertMath />
                             </>
                         )
                     })
