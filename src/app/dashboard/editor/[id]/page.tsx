@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Editor } from '@/components/text-editor/Editor'
 import { SettingsPanel, FormattingSettings, defaultSettings } from '@/components/text-editor/SettingsPanel'
@@ -9,11 +9,21 @@ import { Input } from '@/components/ui/input'
 import { ArrowLeft, Download, Save, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { generatePDF } from '@/lib/pdf-generator'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogDescription,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 
 export default function EditorPage() {
     const params = useParams()
     const router = useRouter()
     const documentId = params?.id as string
+    const editorRef = useRef<HTMLDivElement>(null)
 
     const [title, setTitle] = useState('')
     const [content, setContent] = useState<any>(null)
@@ -21,6 +31,16 @@ export default function EditorPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [exporting, setExporting] = useState(false)
+
+    // Metadata state
+    const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+    const [metadata, setMetadata] = useState({
+        class: '',
+        subject: '',
+        chapter: '',
+        topic: '',
+        subtopic: '',
+    })
 
     useEffect(() => {
         if (documentId && documentId !== 'new') {
@@ -39,6 +59,9 @@ export default function EditorPage() {
                 setTitle(document.title)
                 setContent(document.content)
                 setSettings(document.settings || defaultSettings)
+                if (document.metadata) {
+                    setMetadata(document.metadata)
+                }
             } else {
                 toast.error('Failed to load document')
                 router.push('/dashboard/editor')
@@ -51,8 +74,13 @@ export default function EditorPage() {
         }
     }
 
-    const saveDocument = async () => {
+    const handleSaveClick = () => {
+        setSaveDialogOpen(true)
+    }
+
+    const confirmSave = async () => {
         setSaving(true)
+        setSaveDialogOpen(false)
         try {
             const isNew = !documentId || documentId === 'new'
             const url = isNew ? '/api/documents' : `/api/documents/${documentId}`
@@ -61,7 +89,12 @@ export default function EditorPage() {
             const response = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content, settings }),
+                body: JSON.stringify({
+                    title,
+                    content,
+                    settings,
+                    metadata // Save metadata
+                }),
             })
 
             if (response.ok) {
@@ -102,10 +135,17 @@ export default function EditorPage() {
     const exportPDF = async () => {
         setExporting(true)
         try {
+            // Get the editor content element
+            // We need to find the .tiptap element inside the wrapper
+            const editorElement = editorRef.current?.querySelector('.tiptap') as HTMLElement
+
+            if (!editorElement) {
+                throw new Error('Editor element not found')
+            }
+
             const pdfBlob = await generatePDF({
                 title,
-                content,
-                settings,
+                element: editorElement,
             })
 
             // Download PDF
@@ -174,7 +214,7 @@ export default function EditorPage() {
 
                     <Button
                         size="sm"
-                        onClick={saveDocument}
+                        onClick={handleSaveClick}
                         disabled={saving}
                     >
                         {saving ? (
@@ -189,7 +229,7 @@ export default function EditorPage() {
 
             {/* Editor */}
             <div className="flex-1 overflow-hidden bg-gray-50">
-                <div className="max-w-5xl mx-auto h-full py-8">
+                <div className="max-w-5xl mx-auto h-full py-8" ref={editorRef}>
                     <Editor
                         content={content}
                         onChange={setContent}
@@ -204,6 +244,82 @@ export default function EditorPage() {
                 settings={settings}
                 onSettingsChange={setSettings}
             />
+
+            {/* Save Dialog */}
+            <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Save Document</DialogTitle>
+                        <DialogDescription>
+                            Please provide details for this document.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="class">Class</Label>
+                                <Input
+                                    id="class"
+                                    value={metadata.class}
+                                    onChange={(e) => setMetadata({ ...metadata, class: e.target.value })}
+                                    placeholder="e.g. 10"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="subject">Subject</Label>
+                                <Input
+                                    id="subject"
+                                    value={metadata.subject}
+                                    onChange={(e) => setMetadata({ ...metadata, subject: e.target.value })}
+                                    placeholder="e.g. Physics"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="chapter">Chapter</Label>
+                            <Input
+                                id="chapter"
+                                value={metadata.chapter}
+                                onChange={(e) => setMetadata({ ...metadata, chapter: e.target.value })}
+                                placeholder="e.g. Electrostatics"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="topic">Topic</Label>
+                            <Input
+                                id="topic"
+                                value={metadata.topic}
+                                onChange={(e) => setMetadata({ ...metadata, topic: e.target.value })}
+                                placeholder="e.g. Electric Charge"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="subtopic">Subtopic</Label>
+                            <Input
+                                id="subtopic"
+                                value={metadata.subtopic}
+                                onChange={(e) => setMetadata({ ...metadata, subtopic: e.target.value })}
+                                placeholder="e.g. Properties of Charge"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="docTitle">Document Title</Label>
+                            <Input
+                                id="docTitle"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Enter title"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={confirmSave}>Save</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

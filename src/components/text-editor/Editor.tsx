@@ -10,12 +10,15 @@ import { Box, Math } from '@/lib/tiptap-extensions'
 import { EditorToolbar } from './EditorToolbar'
 import './editor.css'
 import 'katex/dist/katex.min.css'
+import Image from '@tiptap/extension-image'
+import HorizontalRule from '@tiptap/extension-horizontal-rule'
+import { Markdown } from 'tiptap-markdown'
 
 interface EditorProps {
-    content?: any
-    onChange?: (content: any) => void
-    onSave?: (content: any) => void
-    settings?: any
+    content: any
+    onChange: (content: any) => void
+    onSave: (content: any) => void
+    settings: any
 }
 
 export function Editor({ content, onChange, onSave, settings }: EditorProps) {
@@ -33,30 +36,26 @@ export function Editor({ content, onChange, onSave, settings }: EditorProps) {
             }),
             Box,
             Math,
+            Image.configure({
+                inline: true,
+                allowBase64: true,
+            }),
+            HorizontalRule,
+            Markdown,
         ],
         content: content || {
             type: 'doc',
-            content: [
-                {
-                    type: 'paragraph',
-                    content: [
-                        {
-                            type: 'text',
-                            text: 'Start typing...',
-                        },
-                    ],
-                },
-            ],
-        },
-        onUpdate: ({ editor }) => {
-            const json = editor.getJSON()
-            onChange?.(json)
+            content: [],
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none',
+                class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none max-w-none',
                 style: 'font-family: "Tiro Bangla", serif;',
             },
+        },
+        onUpdate: ({ editor }) => {
+            const json = editor.getJSON()
+            onChange(json)
         },
     })
 

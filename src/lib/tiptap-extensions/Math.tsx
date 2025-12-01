@@ -1,5 +1,6 @@
 import { Node } from '@tiptap/core'
-import { mergeAttributes } from '@tiptap/core'
+import { mergeAttributes, ReactNodeViewRenderer } from '@tiptap/react'
+import MathComponent from './MathComponent'
 
 export interface MathOptions {
     HTMLAttributes: Record<string, any>
@@ -54,6 +55,10 @@ export const Math = Node.create<MathOptions>({
             }),
             ['span', { class: 'math-content' }, HTMLAttributes.latex || ''],
         ]
+    },
+
+    addNodeView() {
+        return ReactNodeViewRenderer(MathComponent)
     },
 
     addCommands() {

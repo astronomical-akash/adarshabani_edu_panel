@@ -42,6 +42,20 @@ export function Sidebar({ className }: { className?: string }) {
                             </Link>
                         </Button>
                     </div>
+
+                    <div className="mt-8">
+                        <h2 className="px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+                            Content Creation
+                        </h2>
+                        <div className="space-y-1">
+                            <Button variant="ghost" className="w-full justify-start" asChild>
+                                <Link href="/dashboard/editor">
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Text Editor
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

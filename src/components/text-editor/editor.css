@@ -1,13 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap');
-
 /* Editor Container */
 .editor-container {
   display: flex;
   flex-direction: column;
   height: 100%;
   background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  border-radius: 0;
+  border: 1px solid #e5e7eb;
 }
 
 /* Toolbar */
@@ -18,8 +16,7 @@
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #e5e7eb;
   flex-wrap: wrap;
-  background: #f9fafb;
-  border-radius: 0.5rem 0.5rem 0 0;
+  background: white;
 }
 
 .toolbar-group {
@@ -34,9 +31,17 @@
   background: #e5e7eb;
 }
 
+.editor-toolbar button {
+  color: black;
+}
+
+.editor-toolbar button:hover {
+  background: #f3f4f6;
+}
+
 .editor-toolbar button.is-active {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: #e5e7eb;
+  color: black;
 }
 
 /* Editor Content */
@@ -56,7 +61,7 @@
 .editor-content .tiptap h1 {
   font-size: var(--h1-font-size, 2.5rem);
   font-weight: var(--h1-font-weight, bold);
-  color: var(--h1-color, #1a1a1a);
+  color: var(--h1-color, #000000);
   margin-top: var(--h1-margin-top, 2rem);
   margin-bottom: var(--h1-margin-bottom, 1rem);
   line-height: 1.2;
@@ -65,7 +70,7 @@
 .editor-content .tiptap h2 {
   font-size: var(--h2-font-size, 2rem);
   font-weight: var(--h2-font-weight, bold);
-  color: var(--h2-color, #2a2a2a);
+  color: var(--h2-color, #000000);
   margin-top: var(--h2-margin-top, 1.5rem);
   margin-bottom: var(--h2-margin-bottom, 0.75rem);
   line-height: 1.3;
@@ -74,7 +79,7 @@
 .editor-content .tiptap h3 {
   font-size: var(--h3-font-size, 1.5rem);
   font-weight: var(--h3-font-weight, 600);
-  color: var(--h3-color, #3a3a3a);
+  color: var(--h3-color, #000000);
   margin-top: var(--h3-margin-top, 1rem);
   margin-bottom: var(--h3-margin-bottom, 0.5rem);
   line-height: 1.4;
@@ -84,7 +89,7 @@
 .editor-content .tiptap p {
   font-size: var(--paragraph-font-size, 1rem);
   line-height: var(--paragraph-line-height, 1.75);
-  color: var(--paragraph-color, #4a4a4a);
+  color: var(--paragraph-color, #000000);
   margin-bottom: var(--paragraph-margin-bottom, 1rem);
 }
 
@@ -109,10 +114,10 @@
 
 /* Box / Callout */
 .editor-content .tiptap [data-type="box"] {
-  background-color: var(--box-background-color, #f0f9ff);
-  border-left: var(--box-border-width, 4px) solid var(--box-border-color, #0ea5e9);
+  background-color: var(--box-background-color, #ffffff);
+  border: var(--box-border-width, 1px) solid var(--box-border-color, #000000);
   padding: var(--box-padding, 1rem);
-  border-radius: var(--box-border-radius, 0.5rem);
+  border-radius: var(--box-border-radius, 0);
   margin: 1.5rem 0;
 }
 
@@ -120,9 +125,12 @@
 .editor-content .tiptap .math-block {
   margin: 1.5rem 0;
   padding: 1rem;
-  background: #f9fafb;
-  border-radius: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
   overflow-x: auto;
+  display: flex;
+  justify-content: center;
 }
 
 .editor-content .tiptap .math-content {
@@ -130,6 +138,26 @@
   font-size: 1.2rem;
   display: block;
   text-align: center;
+}
+
+/* Images */
+.editor-content .tiptap img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5rem auto;
+  border-radius: 0;
+}
+
+.editor-content .tiptap img.ProseMirror-selectednode {
+  outline: 2px solid black;
+}
+
+/* Horizontal Rule */
+.editor-content .tiptap hr {
+  border: none;
+  border-top: 1px solid #000000;
+  margin: 2rem 0;
 }
 
 /* Settings Panel */
@@ -174,7 +202,7 @@
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: #374151;
+  color: #000000;
 }
 
 .setting-grid {
@@ -183,7 +211,7 @@
   gap: 1rem;
 }
 
-.setting-grid > div {
+.setting-grid>div {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

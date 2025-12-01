@@ -11,177 +11,196 @@ import {
     Heading3,
     Box as BoxIcon,
     Sigma,
-    Sparkles,
     Undo,
     Redo,
-    Type,
+    Minus,
+    Image as ImageIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { AIMenu } from './AIMenu'
 import { useState } from 'react'
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogFooter,
+    DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 interface EditorToolbarProps {
-    editor: Editor
+    editor: Editor | null
 }
 
 export function EditorToolbar({ editor }: EditorToolbarProps) {
     const [latexDialogOpen, setLatexDialogOpen] = useState(false)
     const [latexInput, setLatexInput] = useState('')
 
+    if (!editor) {
+        return null
+    }
+
     const insertLatex = () => {
-        if (latexInput.trim()) {
-            editor.commands.setMath(latexInput)
+        if (latexInput) {
+            editor.chain().focus().insertContent(`<div data-type="math" data-latex="${latexInput}"></div>`).run()
             setLatexInput('')
             setLatexDialogOpen(false)
         }
     }
 
+    const addImage = () => {
+        const url = window.prompt('URL')
+
+        if (url) {
+            editor.chain().focus().setImage({ src: url }).run()
+        }
+    }
+
     return (
         <>
-            <div className="editor-toolbar">
-                <div className="toolbar-group">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().undo().run()}
-                        disabled={!editor.can().undo()}
-                        title="Undo"
-                    >
-                        <Undo className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => editor.chain().focus().redo().run()}
-                        disabled={!editor.can().redo()}
-                        title="Redo"
-                    >
-                        <Redo className="h-4 w-4" />
-                    </Button>
-                </div>
-
-                <div className="toolbar-divider" />
-
+            <div className="editor-toolbar bg-white border-b border-neutral-200">
                 <div className="toolbar-group">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => editor.chain().focus().toggleBold().run()}
-                        className={editor.isActive('bold') ? 'is-active' : ''}
-                        title="Bold"
+                        disabled={!editor.can().chain().focus().toggleBold().run()}
+                        className={editor.isActive('bold') ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
                     >
-                        <Bold className="h-4 w-4" />
+                        <Bold className="h-4 w-4 text-black" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => editor.chain().focus().toggleItalic().run()}
-                        className={editor.isActive('italic') ? 'is-active' : ''}
-                        title="Italic"
+                        disabled={!editor.can().chain().focus().toggleItalic().run()}
+                        className={editor.isActive('italic') ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
                     >
-                        <Italic className="h-4 w-4" />
+                        <Italic className="h-4 w-4 text-black" />
                     </Button>
                 </div>
 
-                <div className="toolbar-divider" />
+                <div className="toolbar-divider bg-neutral-200" />
 
                 <div className="toolbar-group">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                        className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
-                        title="Heading 1"
+                        className={editor.isActive('heading', { level: 1 }) ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
                     >
-                        <Heading1 className="h-4 w-4" />
+                        <Heading1 className="h-4 w-4 text-black" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                        className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
-                        title="Heading 2"
+                        className={editor.isActive('heading', { level: 2 }) ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
                     >
-                        <Heading2 className="h-4 w-4" />
+                        <Heading2 className="h-4 w-4 text-black" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                        className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
-                        title="Heading 3"
+                        className={editor.isActive('heading', { level: 3 }) ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
                     >
-                        <Heading3 className="h-4 w-4" />
+                        <Heading3 className="h-4 w-4 text-black" />
                     </Button>
                 </div>
 
-                <div className="toolbar-divider" />
+                <div className="toolbar-divider bg-neutral-200" />
 
                 <div className="toolbar-group">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        className={editor.isActive('bulletList') ? 'is-active' : ''}
-                        title="Bullet List"
+                        className={editor.isActive('bulletList') ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
                     >
-                        <List className="h-4 w-4" />
+                        <List className="h-4 w-4 text-black" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                        className={editor.isActive('orderedList') ? 'is-active' : ''}
-                        title="Numbered List"
+                        className={editor.isActive('orderedList') ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
                     >
-                        <ListOrdered className="h-4 w-4" />
+                        <ListOrdered className="h-4 w-4 text-black" />
                     </Button>
                 </div>
 
-                <div className="toolbar-divider" />
+                <div className="toolbar-divider bg-neutral-200" />
 
                 <div className="toolbar-group">
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => editor.chain().focus().toggleBox().run()}
-                        className={editor.isActive('box') ? 'is-active' : ''}
-                        title="Box / Callout"
+                        onClick={() => editor.chain().focus().toggleMark('box').run()}
+                        className={editor.isActive('box') ? 'is-active bg-neutral-100' : 'hover:bg-neutral-50'}
+                        title="Insert Box"
                     >
-                        <BoxIcon className="h-4 w-4" />
+                        <BoxIcon className="h-4 w-4 text-black" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setLatexDialogOpen(true)}
                         title="Insert LaTeX Equation"
+                        className="hover:bg-neutral-50"
                     >
-                        <Sigma className="h-4 w-4" />
+                        <Sigma className="h-4 w-4 text-black" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                        title="Insert Divider"
+                        className="hover:bg-neutral-50"
+                    >
+                        <Minus className="h-4 w-4 text-black" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={addImage}
+                        title="Insert Image"
+                        className="hover:bg-neutral-50"
+                    >
+                        <ImageIcon className="h-4 w-4 text-black" />
                     </Button>
                 </div>
 
-                <div className="toolbar-divider" />
+                <div className="toolbar-divider bg-neutral-200" />
+
+                <div className="toolbar-group ml-auto">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().undo().run()}
+                        disabled={!editor.can().chain().focus().undo().run()}
+                        className="hover:bg-neutral-50"
+                    >
+                        <Undo className="h-4 w-4 text-black" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().redo().run()}
+                        disabled={!editor.can().chain().focus().redo().run()}
+                        className="hover:bg-neutral-50"
+                    >
+                        <Redo className="h-4 w-4 text-black" />
+                    </Button>
+                </div>
+
+                <div className="toolbar-divider bg-neutral-200" />
 
                 <AIMenu editor={editor} />
             </div>
 
-            {/* LaTeX Dialog */}
             <Dialog open={latexDialogOpen} onOpenChange={setLatexDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -192,10 +211,10 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="latex">LaTeX Expression</Label>
+                            <Label htmlFor="latex">Equation</Label>
                             <Input
                                 id="latex"
-                                placeholder="E = mc^2"
+                                placeholder="e.g. E = mc^2"
                                 value={latexInput}
                                 onChange={(e) => setLatexInput(e.target.value)}
                                 onKeyDown={(e) => {
@@ -207,9 +226,6 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setLatexDialogOpen(false)}>
-                            Cancel
-                        </Button>
                         <Button onClick={insertLatex}>Insert</Button>
                     </DialogFooter>
                 </DialogContent>

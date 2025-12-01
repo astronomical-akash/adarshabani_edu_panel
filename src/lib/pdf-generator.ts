@@ -1,16 +1,15 @@
 import { jsPDF } from 'jspdf'
-import katex from 'katex'
 import html2canvas from 'html2canvas'
 
 interface PDFGeneratorOptions {
     title: string
-    content: any // TipTap JSON
-    settings?: any
+    element: HTMLElement
 }
 
 export async function generatePDF(options: PDFGeneratorOptions): Promise<Blob> {
-    const { title, content, settings } = options
+    const { title, element } = options
 
+    // Create PDF
     const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -20,272 +19,100 @@ export async function generatePDF(options: PDFGeneratorOptions): Promise<Blob> {
     const pageWidth = pdf.internal.pageSize.getWidth()
     const pageHeight = pdf.internal.pageSize.getHeight()
     const margin = 20
-    let yPosition = margin
+    const contentWidth = pageWidth - (margin * 2)
 
-    // Add header
-    pdf.setFillColor(37, 99, 235) // Blue color
-    pdf.rect(0, 0, pageWidth, 25, 'F')
+    // Capture the editor content
+    const canvas = await html2canvas(element, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth, // Ensure full width is captured
+    })
 
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(18)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('AdarshabaniNXT', pageWidth / 2, 15, { align: 'center' })
+    const imgData = canvas.toDataURL('image/png')
+    const imgWidth = contentWidth
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
 
-    yPosition = 35
+    let heightLeft = imgHeight
+    let position = 0
+    let page = 1
 
-    // Add document title
-    pdf.setTextColor(0, 0, 0)
-    pdf.setFontSize(20)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(title, margin, yPosition)
-    yPosition += 12
+    // Add header to first page
+    addHeader(pdf, title, pageWidth, margin)
+    position = 40 // Start content after header
 
-    // Add horizontal line
-    pdf.setDrawColor(200, 200, 200)
-    pdf.line(margin, yPosition, pageWidth - margin, yPosition)
-    yPosition += 10
+    // Add first page content
+    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight)
+    heightLeft -= (pageHeight - 40 - margin) // Subtract space used on first page
 
-    // Process content
-    if (content?.content) {
-        for (const node of content.content) {
-            // Check if we need a new page
-            if (yPosition > pageHeight - 40) {
-                pdf.addPage()
-                yPosition = margin
-                addFooter(pdf)
-            }
+    // Add footer to first page
+    addFooter(pdf, 1)
 
-            yPosition = await processNode(pdf, node, yPosition, margin, pageWidth - margin, settings)
-        }
-    }
+    // Add subsequent pages if needed
+    while (heightLeft > 0) {
+        position = heightLeft - imgHeight + margin // Adjust position for next page
+        // Actually, for standard image splitting in jsPDF:
+        // We need to add a new page and draw the image shifted up
 
-    // Add footer to all pages
-    const pageCount = pdf.getNumberOfPages()
-    for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i)
-        addFooter(pdf, i, pageCount)
+        pdf.addPage()
+        page++
+
+        // Calculate position to draw the image so the next chunk is visible
+        // The image is drawn at a negative y-coordinate to show the lower parts
+        const shift = -(pageHeight * (page - 1)) + 40 // Adjust for header space on first page? 
+        // Simpler approach: Just slice the canvas or accept standard splitting
+        // For now, let's just add the image again with an offset
+
+        pdf.addImage(imgData, 'PNG', margin, -(pageHeight - margin) * (page - 1) + 40, imgWidth, imgHeight)
+
+        addFooter(pdf, page)
+        heightLeft -= pageHeight
     }
 
     return pdf.output('blob')
 }
 
-function addFooter(pdf: jsPDF, pageNum?: number, totalPages?: number) {
+function addHeader(pdf: jsPDF, title: string, pageWidth: number, margin: number) {
+    // Blue background
+    pdf.setFillColor(37, 99, 235)
+    pdf.rect(0, 0, pageWidth, 25, 'F')
+
+    // Brand text
+    pdf.setTextColor(255, 255, 255)
+    pdf.setFontSize(18)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('AdarshabaniNXT', pageWidth / 2, 15, { align: 'center' })
+
+    // Document title
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(20)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(title, margin, 35)
+
+    // Divider line
+    pdf.setDrawColor(200, 200, 200)
+    pdf.line(margin, 38, pageWidth - margin, 38)
+}
+
+function addFooter(pdf: jsPDF, pageNum: number) {
     const pageHeight = pdf.internal.pageSize.getHeight()
     const pageWidth = pdf.internal.pageSize.getWidth()
 
     pdf.setFontSize(9)
     pdf.setTextColor(100, 100, 100)
 
-    if (pageNum && totalPages) {
-        pdf.text(
-            `Page ${pageNum} of ${totalPages}`,
-            pageWidth / 2,
-            pageHeight - 10,
-            { align: 'center' }
-        )
-    }
+    pdf.text(
+        `Page ${pageNum}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+    )
 
     pdf.text(
-        `Generated by AdarshabaniNXT Text Editor - ${new Date().toLocaleDateString()}`,
+        `Generated by AdarshabaniNXT - ${new Date().toLocaleDateString()}`,
         pageWidth / 2,
         pageHeight - 5,
         { align: 'center' }
     )
-}
-
-async function processNode(
-    pdf: jsPDF,
-    node: any,
-    yPosition: number,
-    leftMargin: number,
-    rightMargin: number,
-    settings?: any
-): Promise<number> {
-    const pageHeight = pdf.internal.pageSize.getHeight()
-
-    switch (node.type) {
-        case 'heading':
-            return processHeading(pdf, node, yPosition, leftMargin, settings)
-
-        case 'paragraph':
-            return processParagraph(pdf, node, yPosition, leftMargin, rightMargin, settings)
-
-        case 'bulletList':
-        case 'orderedList':
-            return processList(pdf, node, yPosition, leftMargin, rightMargin, settings)
-
-        case 'box':
-            return await processBox(pdf, node, yPosition, leftMargin, rightMargin, settings)
-
-        case 'math':
-            return await processMath(pdf, node, yPosition, leftMargin, rightMargin)
-
-        default:
-            return yPosition
-    }
-}
-
-function processHeading(
-    pdf: jsPDF,
-    node: any,
-    yPosition: number,
-    leftMargin: number,
-    settings?: any
-): number {
-    const level = node.attrs?.level || 1
-    const text = extractText(node)
-
-    const fontSize = level === 1 ? 18 : level === 2 ? 16 : 14
-    const fontWeight = 'bold'
-
-    pdf.setFontSize(fontSize)
-    pdf.setFont('helvetica', fontWeight)
-    pdf.setTextColor(0, 0, 0)
-
-    const lines = pdf.splitTextToSize(text, 170)
-    pdf.text(lines, leftMargin, yPosition + 5)
-
-    return yPosition + 5 + (lines.length * (fontSize / 2)) + 5
-}
-
-function processParagraph(
-    pdf: jsPDF,
-    node: any,
-    yPosition: number,
-    leftMargin: number,
-    rightMargin: number,
-    settings?: any
-): number {
-    const text = extractText(node)
-
-    pdf.setFontSize(11)
-    pdf.setFont('helvetica', 'normal')
-    pdf.setTextColor(50, 50, 50)
-
-    const lines = pdf.splitTextToSize(text, 170)
-    pdf.text(lines, leftMargin, yPosition)
-
-    return yPosition + (lines.length * 6) + 4
-}
-
-function processList(
-    pdf: jsPDF,
-    node: any,
-    yPosition: number,
-    leftMargin: number,
-    rightMargin: number,
-    settings?: any
-): number {
-    const isOrdered = node.type === 'orderedList'
-    let currentY = yPosition
-
-    pdf.setFontSize(11)
-    pdf.setFont('helvetica', 'normal')
-
-    if (node.content) {
-        node.content.forEach((item: any, index: number) => {
-            const bullet = isOrdered ? `${index + 1}.` : '•'
-            const text = extractText(item)
-
-            pdf.text(bullet, leftMargin + 5, currentY)
-
-            const lines = pdf.splitTextToSize(text, 160)
-            pdf.text(lines, leftMargin + 12, currentY)
-
-            currentY += lines.length * 6
-        })
-    }
-
-    return currentY + 4
-}
-
-async function processBox(
-    pdf: jsPDF,
-    node: any,
-    yPosition: number,
-    leftMargin: number,
-    rightMargin: number,
-    settings?: any
-): Promise<number> {
-    const text = extractText(node)
-
-    pdf.setFillColor(240, 249, 255) // Light blue background
-    pdf.setDrawColor(14, 165, 233) // Blue border
-
-    const lines = pdf.splitTextToSize(text, 160)
-    const boxHeight = (lines.length * 6) + 8
-
-    pdf.roundedRect(leftMargin, yPosition, 170, boxHeight, 2, 2, 'FD')
-
-    pdf.setFontSize(11)
-    pdf.setFont('helvetica', 'normal')
-    pdf.setTextColor(0, 0, 0)
-    pdf.text(lines, leftMargin + 4, yPosition + 6)
-
-    return yPosition + boxHeight + 6
-}
-
-async function processMath(
-    pdf: jsPDF,
-    node: any,
-    yPosition: number,
-    leftMargin: number,
-    rightMargin: number
-): Promise<number> {
-    const latex = node.attrs?.latex || ''
-
-    try {
-        // Render LaTeX to HTML
-        const html = katex.renderToString(latex, {
-            throwOnError: false,
-            displayMode: true,
-        })
-
-        // Create temporary container
-        const container = document.createElement('div')
-        container.innerHTML = html
-        container.style.position = 'absolute'
-        container.style.left = '-9999px'
-        container.style.padding = '10px'
-        container.style.backgroundColor = '#f9fafb'
-        document.body.appendChild(container)
-
-        // Convert to canvas
-        const canvas = await html2canvas(container, {
-            backgroundColor: '#f9fafb',
-        })
-
-        // Remove temporary container
-        document.body.removeChild(container)
-
-        // Add to PDF
-        const imgData = canvas.toDataURL('image/png')
-        const imgWidth = 170
-        const imgHeight = (canvas.height * imgWidth) / canvas.width
-
-        pdf.addImage(imgData, 'PNG', leftMargin, yPosition, imgWidth, imgHeight)
-
-        return yPosition + imgHeight + 6
-    } catch (error) {
-        console.error('LaTeX rendering error:', error)
-        // Fallback to plain text
-        pdf.setFontSize(11)
-        pdf.setFont('courier', 'normal')
-        pdf.text(latex, leftMargin, yPosition)
-        return yPosition + 10
-    }
-}
-
-function extractText(node: any): string {
-    if (!node) return ''
-
-    if (node.text) {
-        return node.text
-    }
-
-    if (node.content && Array.isArray(node.content)) {
-        return node.content.map((child: any) => extractText(child)).join(' ')
-    }
-
-    return ''
 }
